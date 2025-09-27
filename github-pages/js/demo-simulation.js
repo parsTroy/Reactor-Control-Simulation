@@ -63,6 +63,14 @@ class DemoSimulation {
                 interaction: {
                     intersect: false
                 },
+                layout: {
+                    padding: {
+                        top: 10,
+                        bottom: 10,
+                        left: 10,
+                        right: 10
+                    }
+                },
                 scales: {
                     x: {
                         title: {
@@ -80,13 +88,19 @@ class DemoSimulation {
                         },
                         min: 0.0,
                         max: 2.0,
+                        beginAtZero: true,
+                        suggestedMin: 0.0,
+                        suggestedMax: 2.0,
                         grid: {
                             display: true
                         },
                         ticks: {
                             min: 0.0,
                             max: 2.0,
-                            stepSize: 0.2
+                            stepSize: 0.2,
+                            callback: function(value) {
+                                return value.toFixed(1);
+                            }
                         }
                     }
                 },
@@ -123,6 +137,14 @@ class DemoSimulation {
                 interaction: {
                     intersect: false
                 },
+                layout: {
+                    padding: {
+                        top: 10,
+                        bottom: 10,
+                        left: 10,
+                        right: 10
+                    }
+                },
                 scales: {
                     x: {
                         title: {
@@ -140,6 +162,9 @@ class DemoSimulation {
                         },
                         min: -0.1,
                         max: 1.1,
+                        beginAtZero: false,
+                        suggestedMin: -0.1,
+                        suggestedMax: 1.1,
                         grid: {
                             display: true
                         },
@@ -254,7 +279,8 @@ class DemoSimulation {
         
         // Add some realistic noise
         this.currentPower += (Math.random() - 0.5) * 0.01;
-        this.currentPower = Math.max(0.1, Math.min(2.0, this.currentPower));
+        // Strictly clamp power values to prevent chart scaling issues
+        this.currentPower = Math.max(0.0, Math.min(2.0, this.currentPower));
         
         // Store data
         this.chartData.times.push(this.currentTime);
@@ -321,16 +347,29 @@ class DemoSimulation {
     updateCharts() {
         if (this.chartData.times.length === 0) return;
         
+        // Clamp all data to prevent chart scaling issues
+        const clampedPowers = this.chartData.powers.map(p => Math.max(0.0, Math.min(2.0, p)));
+        const clampedSetpoints = this.chartData.setpoints.map(s => Math.max(0.0, Math.min(2.0, s)));
+        const clampedScram = this.chartData.scramStatus.map(s => Math.max(0.0, Math.min(1.0, s)));
+        
         // Update power chart
         this.powerChart.data.labels = this.chartData.times.map(t => t.toFixed(3));
-        this.powerChart.data.datasets[0].data = this.chartData.powers;
-        this.powerChart.data.datasets[1].data = this.chartData.setpoints;
+        this.powerChart.data.datasets[0].data = clampedPowers;
+        this.powerChart.data.datasets[1].data = clampedSetpoints;
         this.powerChart.data.datasets[2].data = new Array(this.chartData.times.length).fill(1.2);
+        
+        // Force chart to maintain fixed scale
+        this.powerChart.options.scales.y.min = 0.0;
+        this.powerChart.options.scales.y.max = 2.0;
         this.powerChart.update('none');
         
         // Update safety chart
         this.safetyChart.data.labels = this.chartData.times.map(t => t.toFixed(3));
-        this.safetyChart.data.datasets[0].data = this.chartData.scramStatus;
+        this.safetyChart.data.datasets[0].data = clampedScram;
+        
+        // Force chart to maintain fixed scale
+        this.safetyChart.options.scales.y.min = -0.1;
+        this.safetyChart.options.scales.y.max = 1.1;
         this.safetyChart.update('none');
     }
     
