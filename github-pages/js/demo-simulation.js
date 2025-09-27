@@ -91,6 +91,16 @@ class DemoSimulation {
                         beginAtZero: true,
                         suggestedMin: 0.0,
                         suggestedMax: 2.0,
+                        afterBuildTicks: function(scale) {
+                            scale.ticks = [
+                                { value: 0.0, label: '0.0' },
+                                { value: 0.4, label: '0.4' },
+                                { value: 0.8, label: '0.8' },
+                                { value: 1.2, label: '1.2' },
+                                { value: 1.6, label: '1.6' },
+                                { value: 2.0, label: '2.0' }
+                            ];
+                        },
                         grid: {
                             display: true
                         },
@@ -165,6 +175,15 @@ class DemoSimulation {
                         beginAtZero: false,
                         suggestedMin: -0.1,
                         suggestedMax: 1.1,
+                        afterBuildTicks: function(scale) {
+                            scale.ticks = [
+                                { value: -0.1, label: '' },
+                                { value: 0.0, label: 'NO' },
+                                { value: 0.5, label: '' },
+                                { value: 1.0, label: 'YES' },
+                                { value: 1.1, label: '' }
+                            ];
+                        },
                         grid: {
                             display: true
                         },
@@ -358,18 +377,37 @@ class DemoSimulation {
         this.powerChart.data.datasets[1].data = clampedSetpoints;
         this.powerChart.data.datasets[2].data = new Array(this.chartData.times.length).fill(1.2);
         
-        // Force chart to maintain fixed scale
+        // Force chart to maintain fixed scale - completely disable auto-scaling
         this.powerChart.options.scales.y.min = 0.0;
         this.powerChart.options.scales.y.max = 2.0;
+        this.powerChart.options.scales.y.afterBuildTicks = function(scale) {
+            scale.ticks = [
+                { value: 0.0, label: '0.0' },
+                { value: 0.4, label: '0.4' },
+                { value: 0.8, label: '0.8' },
+                { value: 1.2, label: '1.2' },
+                { value: 1.6, label: '1.6' },
+                { value: 2.0, label: '2.0' }
+            ];
+        };
         this.powerChart.update('none');
         
         // Update safety chart
         this.safetyChart.data.labels = this.chartData.times.map(t => t.toFixed(3));
         this.safetyChart.data.datasets[0].data = clampedScram;
         
-        // Force chart to maintain fixed scale
+        // Force chart to maintain fixed scale - completely disable auto-scaling
         this.safetyChart.options.scales.y.min = -0.1;
         this.safetyChart.options.scales.y.max = 1.1;
+        this.safetyChart.options.scales.y.afterBuildTicks = function(scale) {
+            scale.ticks = [
+                { value: -0.1, label: '' },
+                { value: 0.0, label: 'NO' },
+                { value: 0.5, label: '' },
+                { value: 1.0, label: 'YES' },
+                { value: 1.1, label: '' }
+            ];
+        };
         this.safetyChart.update('none');
     }
     
