@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Reactor Control Simulation - GitHub Pages Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-normal { background-color: #28a745; }
+        .status-danger { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .scenario-btn {
+            margin: 5px;
+            min-width: 150px;
+        }
+        .reactor-3d-container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .reactor-3d-container canvas {
+            display: block;
+        }
+        .demo-notice {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 5px 0;
+        }
+        .feature-list li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Demo Notice -->
+            <div class="col-12">
+                <div class="demo-notice">
+                    <h2>Nuclear Reactor Control Simulation - GitHub Pages Demo</h2>
+                    <p class="mb-0">This is a <strong>static demonstration</strong> of the full simulation. The complete version with real-time C++ simulation and WebSocket communication is available in the repository.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Panel - Controls and Status -->
+            <div class="col-lg-4">
+                <!-- System Status -->
+                <div class="chart-container">
+                    <h5>System Status</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Current Power:</strong><br>
+                            <span id="current-power" class="h4 text-primary">1.000</span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Time (s):</strong><br>
+                            <span id="current-time" class="h4 text-info">0.000</span>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <strong>SCRAM Status:</strong>
+                        <span id="scram-status" class="badge bg-success ms-2">NORMAL</span>
+                    </div>
+                    <div class="mt-2">
+                        <strong>Simulation:</strong>
+                        <span id="sim-status" class="badge bg-success ms-2">RUNNING</span>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <h5>Control Panel</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" onclick="startSimulation()">
+                            Start Simulation
+                        </button>
+                        <button class="btn btn-danger" onclick="stopSimulation()">
+                            Stop Simulation
+                        </button>
+                        <button class="btn btn-warning" onclick="resetSimulation()">
+                            Reset
+                        </button>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label for="power-setpoint" class="form-label">Power Setpoint: <span id="setpoint-value">1.0</span></label>
+                        <input type="range" class="form-range" id="power-setpoint" 
+                               min="0.5" max="1.5" step="0.1" value="1.0" 
+                               oninput="updateSetpoint(this.value)">
+                    </div>
+                </div>
+
+                <!-- Test Scenarios -->
+                <div class="chart-container">
+                    <h5>Test Scenarios</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary scenario-btn" onclick="runScenario('normal')">
+                            Normal Operation
+                        </button>
+                        <button class="btn btn-outline-warning scenario-btn" onclick="runScenario('ramp')">
+                            Power Ramp
+                        </button>
+                        <button class="btn btn-outline-danger scenario-btn" onclick="runScenario('scram')">
+                            Emergency SCRAM
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Features List -->
+                <div class="chart-container">
+                    <h5>Demo Features</h5>
+                    <ul class="feature-list">
+                        <li>Interactive 3D Reactor Visualization</li>
+                        <li>Real-time Power Monitoring Charts</li>
+                        <li>Safety System Status Display</li>
+                        <li>Emergency SCRAM Simulation</li>
+                        <li>Control Rod Animation</li>
+                        <li>Power Level Indicators</li>
+                        <li>Responsive Web Design</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Panel - Visualizations -->
+            <div class="col-lg-8">
+                <!-- 3D Reactor Visualization -->
+                <div class="chart-container">
+                    <h5>3D Reactor Visualization</h5>
+                    <div id="reactor3d-container" class="reactor-3d-container" style="width: 100%; height: 300px;">
+                        <canvas id="reactor3d-canvas"></canvas>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Click and drag to rotate • Scroll to zoom • Right-click to pan
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Real-time Power Chart -->
+                <div class="chart-container">
+                    <h5>Real-time Power Monitoring</h5>
+                    <canvas id="powerChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Safety System Status Chart -->
+                <div class="chart-container">
+                    <h5>Safety System Status</h5>
+                    <canvas id="safetyChart" width="400" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Repository Information -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h5>Full Implementation Available</h5>
+                    <p>This demo showcases the visual and interactive components. The complete implementation includes:</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Backend Technologies:</h6>
+                            <ul>
+                                <li>C++ Nuclear Reactor Physics Engine</li>
+                                <li>Python Pybind11 Integration</li>
+                                <li>Flask WebSocket Server</li>
+                                <li>Real-time Data Streaming</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Frontend Technologies:</h6>
+                            <ul>
+                                <li>Three.js 3D Visualization</li>
+                                <li>Chart.js Real-time Charts</li>
+                                <li>Bootstrap 5 Responsive UI</li>
+                                <li>WebSocket Communication</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="https://github.com/aeronuclear/aeronuclear" class="btn btn-primary">
+                            View Full Source Code
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/reactor3d.js"></script>
+    <script src="js/demo-simulation.js"></script>
+</body>
+</html>

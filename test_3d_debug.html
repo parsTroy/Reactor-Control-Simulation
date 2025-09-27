@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Reactor Debug Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #container { width: 800px; height: 600px; border: 2px solid #333; margin: 20px 0; }
+        .controls { margin: 10px 0; }
+        button { margin: 5px; padding: 10px; }
+        .status { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>3D Reactor Debug Test</h1>
+    <p>This page tests the 3D reactor visualization independently.</p>
+    
+    <div class="controls">
+        <button onclick="testNormalPower()">Normal Power (1.0)</button>
+        <button onclick="testHighPower()">High Power (1.2)</button>
+        <button onclick="testScram()">SCRAM (1.5)</button>
+        <button onclick="testLowPower()">Low Power (0.5)</button>
+    </div>
+    
+    <div class="status" id="status">
+        Status: Ready
+    </div>
+    
+    <div id="container">
+        <canvas id="reactor3d-canvas"></canvas>
+    </div>
+    
+    <div class="status" id="debug">
+        Debug: Loading...
+    </div>
+
+    <script>
+        // Copy the Reactor3D class here for testing
+        class Reactor3D {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.reactorCore = null;
+                this.controlRods = [];
+                this.powerIndicator = null;
+                this.animationId = null;
+                this.currentPower = 1.0;
+                this.isScrammed = false;
+                
+                this.init();
+            }
+            
+            init() {
+                // Get container and canvas
+                const container = document.getElementById('container');
+                const canvas = document.getElementById('reactor3d-canvas');
+                
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x1a1a1a);
+                
+                // Camera setup
+                this.camera = new THREE.PerspectiveCamera(
+                    75, 
+                    container.clientWidth / container.clientHeight, 
+                    0.1, 
+                    1000
+                );
+                this.camera.position.set(5, 5, 5);
+                
+                // Renderer setup
+                this.renderer = new THREE.WebGLRenderer({ 
+                    canvas: canvas,
+                    antialias: true 
+                });
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                // Controls setup
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.enableZoom = true;
+                this.controls.enablePan = true;
+                
+                // Lighting
+                this.setupLighting();
+                
+                // Create reactor components
+                this.createReactorCore();
+                this.createControlRods();
+                this.createPowerIndicator();
+                this.createEnvironment();
+                
+                // Start animation loop
+                this.animate();
+                
+                document.getElementById('debug').textContent = 'Debug: 3D Reactor initialized successfully';
+            }
+            
+            setupLighting() {
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+                this.scene.add(ambientLight);
+                
+                // Directional light
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 10, 5);
+                directionalLight.castShadow = true;
+                this.scene.add(directionalLight);
+            }
+            
+            createReactorCore() {
+                // Main reactor vessel
+                const coreGeometry = new THREE.CylinderGeometry(1.5, 1.5, 3, 32);
+                const coreMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x333333,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                this.reactorCore = new THREE.Mesh(coreGeometry, coreMaterial);
+                this.reactorCore.position.y = 0;
+                this.scene.add(this.reactorCore);
+                
+                // Reactor core interior (fuel rods)
+                const fuelGeometry = new THREE.CylinderGeometry(1.2, 1.2, 2.8, 16);
+                const fuelMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x444444,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const fuelCore = new THREE.Mesh(fuelGeometry, fuelMaterial);
+                fuelCore.position.y = 0;
+                this.scene.add(fuelCore);
+            }
+            
+            createControlRods() {
+                // Create control rods around the reactor
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const radius = 2.2;
+                    const x = Math.cos(angle) * radius;
+                    const z = Math.sin(angle) * radius;
+                    
+                    const rodGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
+                    const rodMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
+                    const controlRod = new THREE.Mesh(rodGeometry, rodMaterial);
+                    controlRod.position.set(x, 1, z);
+                    controlRod.userData = { index: i, originalY: 1 };
+                    this.controlRods.push(controlRod);
+                    this.scene.add(controlRod);
+                }
+            }
+            
+            createPowerIndicator() {
+                // Power level indicator (glowing sphere inside reactor)
+                const indicatorGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                const indicatorMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x00ff00,
+                    transparent: true,
+                    opacity: 0.8,
+                    emissive: 0x004400
+                });
+                this.powerIndicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+                this.powerIndicator.position.y = 0;
+                this.scene.add(this.powerIndicator);
+            }
+            
+            createEnvironment() {
+                // Floor
+                const floorGeometry = new THREE.PlaneGeometry(20, 20);
+                const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.y = -2;
+                this.scene.add(floor);
+            }
+            
+            updatePower(power, scramStatus) {
+                console.log('Reactor3D.updatePower called with:', { power, scramStatus });
+                this.currentPower = power;
+                this.isScrammed = scramStatus;
+                
+                // Update power indicator color and intensity
+                if (this.powerIndicator) {
+                    if (scramStatus) {
+                        // SCRAM - red color
+                        this.powerIndicator.material.color.setHex(0xff0000);
+                        this.powerIndicator.material.emissive.setHex(0x440000);
+                        document.getElementById('status').textContent = `Status: SCRAM - Power: ${power.toFixed(3)} (RED)`;
+                    } else if (power > 1.1) {
+                        // High power - orange color
+                        this.powerIndicator.material.color.setHex(0xff8800);
+                        this.powerIndicator.material.emissive.setHex(0x442200);
+                        document.getElementById('status').textContent = `Status: High Power - Power: ${power.toFixed(3)} (ORANGE)`;
+                    } else if (power > 0.9) {
+                        // Normal power - green color
+                        this.powerIndicator.material.color.setHex(0x00ff00);
+                        this.powerIndicator.material.emissive.setHex(0x004400);
+                        document.getElementById('status').textContent = `Status: Normal Power - Power: ${power.toFixed(3)} (GREEN)`;
+                    } else {
+                        // Low power - blue color
+                        this.powerIndicator.material.color.setHex(0x0088ff);
+                        this.powerIndicator.material.emissive.setHex(0x002244);
+                        document.getElementById('status').textContent = `Status: Low Power - Power: ${power.toFixed(3)} (BLUE)`;
+                    }
+                    
+                    // Scale based on power level
+                    const scale = 0.5 + (power * 0.5);
+                    this.powerIndicator.scale.setScalar(scale);
+                }
+                
+                // Update control rod positions based on power
+                this.controlRods.forEach((rod, index) => {
+                    if (scramStatus) {
+                        // SCRAM - rods fully inserted
+                        rod.position.y = rod.userData.originalY - 1.5;
+                    } else {
+                        // Normal operation - rods partially inserted based on power
+                        const insertion = (1.0 - power) * 1.5;
+                        rod.position.y = rod.userData.originalY - insertion;
+                    }
+                });
+                
+                // Update reactor core glow
+                if (this.reactorCore) {
+                    this.reactorCore.material.emissive.setHex(
+                        scramStatus ? 0x220000 : 
+                        power > 1.1 ? 0x221100 : 
+                        power > 0.9 ? 0x002200 : 0x000022
+                    );
+                }
+            }
+            
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
+                
+                // Update controls
+                this.controls.update();
+                
+                // Rotate reactor core slowly
+                if (this.reactorCore) {
+                    this.reactorCore.rotation.y += 0.005;
+                }
+                
+                // Animate power indicator
+                if (this.powerIndicator) {
+                    this.powerIndicator.rotation.x += 0.01;
+                    this.powerIndicator.rotation.y += 0.01;
+                }
+                
+                // Render
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+        
+        // Global 3D reactor instance
+        let reactor3D = null;
+        
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            try {
+                reactor3D = new Reactor3D();
+                console.log('3D Reactor visualization initialized');
+            } catch (error) {
+                console.error('Error initializing 3D reactor:', error);
+                document.getElementById('debug').textContent = 'Debug: Error - ' + error.message;
+            }
+        });
+        
+        // Test functions
+        function testNormalPower() {
+            if (reactor3D) {
+                reactor3D.updatePower(1.0, false);
+            }
+        }
+        
+        function testHighPower() {
+            if (reactor3D) {
+                reactor3D.updatePower(1.2, false);
+            }
+        }
+        
+        function testScram() {
+            if (reactor3D) {
+                reactor3D.updatePower(1.5, true);
+            }
+        }
+        
+        function testLowPower() {
+            if (reactor3D) {
+                reactor3D.updatePower(0.5, false);
+            }
+        }
+    </script>
+</body>
+</html>

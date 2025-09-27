@@ -27,4 +27,5 @@ flake8>=3.9.0
 # Web UI
 Flask>=2.3.0
 Werkzeug>=2.3.0
+Flask-SocketIO>=5.3.0
 requests>=2.28.0

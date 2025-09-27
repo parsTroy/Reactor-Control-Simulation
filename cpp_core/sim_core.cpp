@@ -107,6 +107,20 @@ public:
     }
     
     /**
+     * @brief Manually trigger SCRAM
+     */
+    void triggerScram() {
+        safety_system_.triggerScram();
+    }
+    
+    /**
+     * @brief Reset SCRAM status
+     */
+    void resetScram() {
+        safety_system_.resetScram();
+    }
+    
+    /**
      * @brief Get reactor parameters
      */
     const ReactorParams& getReactorParams() const {

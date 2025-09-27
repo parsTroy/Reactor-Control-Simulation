@@ -4,11 +4,12 @@
 let powerChart, safetyChart;
 let updateInterval;
 let isSimulationRunning = false;
+let socket;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
-    startStatusUpdates();
+    initializeWebSocket();
     loadConfiguration();
 });
 
@@ -136,9 +137,161 @@ function initializeCharts() {
     });
 }
 
-// Start periodic status updates
+// Initialize WebSocket connection
+function initializeWebSocket() {
+    console.log('Initializing WebSocket connection...');
+    socket = io();
+    
+    // Connection events
+    socket.on('connect', function() {
+        console.log('WebSocket connected');
+        updateConnectionStatus('Connected', 'success');
+        // Request initial status
+        socket.emit('request_status');
+    });
+    
+    socket.on('disconnect', function() {
+        console.log('WebSocket disconnected');
+        updateConnectionStatus('Disconnected', 'danger');
+    });
+    
+    socket.on('connection_status', function(data) {
+        console.log('Connection status:', data.status);
+    });
+    
+    // Simulation events
+    socket.on('simulation_update', function(data) {
+        // Only log every 10th update to reduce console spam
+        if (Math.random() < 0.1) {
+            console.log('Received simulation update:', data);
+            console.log('Time:', data.current_data.time, 'Power:', data.current_data.power, 'SCRAM:', data.current_data.scram_status);
+        }
+        updateSimulationData(data.current_data, data.history);
+    });
+    
+    socket.on('status_update', function(data) {
+        updateSystemStatus(data);
+    });
+    
+    socket.on('simulation_started', function(data) {
+        console.log('Simulation started via WebSocket');
+        isSimulationRunning = true;
+        document.getElementById('start-btn').disabled = true;
+        document.getElementById('stop-btn').disabled = false;
+    });
+    
+    socket.on('simulation_stopped', function(data) {
+        console.log('Simulation stopped via WebSocket');
+        isSimulationRunning = false;
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+    });
+    
+    socket.on('simulation_reset', function(data) {
+        console.log('Simulation reset via WebSocket');
+        isSimulationRunning = false;
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+        clearCharts();
+    });
+}
+
+// Update connection status indicator
+function updateConnectionStatus(status, type) {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    
+    statusText.textContent = status;
+    statusIndicator.className = `status-indicator status-${type === 'success' ? 'normal' : 'danger'}`;
+}
+
+// Update simulation data from WebSocket
+function updateSimulationData(currentData, history) {
+    // Update current values
+    document.getElementById('current-power').textContent = currentData.power.toFixed(3);
+    document.getElementById('current-time').textContent = currentData.time.toFixed(3);
+    
+    // Update SCRAM status
+    const scramElement = document.getElementById('scram-status');
+    if (currentData.scram_status) {
+        scramElement.textContent = 'SCRAM ACTIVE';
+        scramElement.className = 'badge bg-danger';
+    } else {
+        scramElement.textContent = 'NORMAL';
+        scramElement.className = 'badge bg-success';
+    }
+    
+    // Update simulation status
+    const simElement = document.getElementById('sim-status');
+    if (isSimulationRunning) {
+        simElement.textContent = 'RUNNING';
+        simElement.className = 'badge bg-success';
+    } else {
+        simElement.textContent = 'STOPPED';
+        simElement.className = 'badge bg-secondary';
+    }
+    
+    // Update 3D reactor visualization
+    if (typeof updateReactor3D === 'function') {
+        updateReactor3D(currentData.power, currentData.scram_status);
+    }
+    
+    // Update charts with new data
+    updateChartsWithData(history);
+    
+    // Debug: Log the update
+    console.log('UI Updated - Time:', currentData.time, 'Power:', currentData.power, 'SCRAM:', currentData.scram_status);
+}
+
+// Update system status from WebSocket
+function updateSystemStatus(data) {
+    // Update current values
+    document.getElementById('current-power').textContent = data.current_data.power.toFixed(3);
+    document.getElementById('current-time').textContent = data.current_data.time.toFixed(3);
+    
+    // Update SCRAM status
+    const scramElement = document.getElementById('scram-status');
+    if (data.current_data.scram_status) {
+        scramElement.textContent = 'SCRAM ACTIVE';
+        scramElement.className = 'badge bg-danger';
+    } else {
+        scramElement.textContent = 'NORMAL';
+        scramElement.className = 'badge bg-success';
+    }
+    
+    // Update simulation status
+    const simElement = document.getElementById('sim-status');
+    if (data.is_running) {
+        simElement.textContent = 'RUNNING';
+        simElement.className = 'badge bg-success';
+    } else {
+        simElement.textContent = 'STOPPED';
+        simElement.className = 'badge bg-secondary';
+    }
+    
+    // Update 3D reactor visualization
+    if (typeof updateReactor3D === 'function') {
+        updateReactor3D(data.current_data.power, data.current_data.scram_status);
+    }
+}
+
+// Clear charts
+function clearCharts() {
+    powerChart.data.labels = [];
+    powerChart.data.datasets.forEach(dataset => dataset.data = []);
+    powerChart.update();
+    
+    safetyChart.data.labels = [];
+    safetyChart.data.datasets.forEach(dataset => dataset.data = []);
+    safetyChart.update();
+    
+    document.getElementById('data-points').textContent = '0';
+}
+
+// Start periodic status updates (fallback for non-WebSocket browsers)
 function startStatusUpdates() {
-    updateInterval = setInterval(updateStatus, 1000); // 1 Hz updates (once per second)
+    // This is now handled by WebSocket, but kept as fallback
+    console.log('Using WebSocket for real-time updates');
 }
 
 // Update system status
@@ -207,7 +360,49 @@ async function updateStatus() {
     }
 }
 
-// Update charts with new data
+// Update charts with WebSocket data
+function updateChartsWithData(history) {
+    if (history.times && history.times.length > 0 && history.powers && history.powers.length > 0) {
+        // Validate and clamp power data to reasonable bounds
+        const validPowers = history.powers.map(power => {
+            if (isNaN(power) || !isFinite(power)) {
+                return 1.0; // Default to 1.0 for invalid values
+            }
+            // Clamp between 0 and 2.0 to match chart bounds
+            const clamped = Math.max(0, Math.min(power, 2.0));
+            return clamped;
+        });
+        
+        // Update power chart
+        powerChart.data.labels = history.times.map(t => t.toFixed(3));
+        powerChart.data.datasets[0].data = validPowers;
+        
+        // Update setpoint line
+        const setpoint = parseFloat(document.getElementById('power-setpoint').value);
+        powerChart.data.datasets[1].data = new Array(history.times.length).fill(setpoint);
+        
+        // Update overpower threshold line
+        powerChart.data.datasets[2].data = new Array(history.times.length).fill(1.2);
+        
+        // Update chart with animation disabled for performance
+        // Only update if we have valid data
+        if (validPowers.length > 0) {
+            powerChart.update('none');
+        }
+        
+        // Update safety chart
+        safetyChart.data.labels = history.times.map(t => t.toFixed(3));
+        safetyChart.data.datasets[0].data = history.scram_status.map(s => s ? 1 : 0);
+        safetyChart.update('none');
+        
+        // Update data points counter
+        document.getElementById('data-points').textContent = history.times.length;
+        
+        // Y-axis is already fixed in chart initialization - no changes needed
+    }
+}
+
+// Update charts with new data (fallback for HTTP polling)
 async function updateCharts() {
     try {
         const response = await fetch('/api/data');
@@ -259,13 +454,19 @@ async function updateCharts() {
 // Start simulation
 async function startSimulation() {
     try {
-        const response = await fetch('/api/start', { method: 'POST' });
-        const data = await response.json();
-        
-        if (data.status === 'started') {
-            isSimulationRunning = true;
-            document.getElementById('start-btn').disabled = true;
-            document.getElementById('stop-btn').disabled = false;
+        if (socket && socket.connected) {
+            // Use WebSocket for real-time communication
+            socket.emit('start_simulation');
+        } else {
+            // Fallback to HTTP API
+            const response = await fetch('/api/start', { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.status === 'started') {
+                isSimulationRunning = true;
+                document.getElementById('start-btn').disabled = true;
+                document.getElementById('stop-btn').disabled = false;
+            }
         }
     } catch (error) {
         console.error('Error starting simulation:', error);
@@ -276,13 +477,19 @@ async function startSimulation() {
 // Stop simulation
 async function stopSimulation() {
     try {
-        const response = await fetch('/api/stop', { method: 'POST' });
-        const data = await response.json();
-        
-        if (data.status === 'stopped') {
-            isSimulationRunning = false;
-            document.getElementById('start-btn').disabled = false;
-            document.getElementById('stop-btn').disabled = true;
+        if (socket && socket.connected) {
+            // Use WebSocket for real-time communication
+            socket.emit('stop_simulation');
+        } else {
+            // Fallback to HTTP API
+            const response = await fetch('/api/stop', { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.status === 'stopped') {
+                isSimulationRunning = false;
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('stop-btn').disabled = true;
+            }
         }
     } catch (error) {
         console.error('Error stopping simulation:', error);
@@ -293,24 +500,20 @@ async function stopSimulation() {
 // Reset simulation
 async function resetSimulation() {
     try {
-        const response = await fetch('/api/reset', { method: 'POST' });
-        const data = await response.json();
-        
-        if (data.status === 'reset') {
-            isSimulationRunning = false;
-            document.getElementById('start-btn').disabled = false;
-            document.getElementById('stop-btn').disabled = true;
+        if (socket && socket.connected) {
+            // Use WebSocket for real-time communication
+            socket.emit('reset_simulation');
+        } else {
+            // Fallback to HTTP API
+            const response = await fetch('/api/reset', { method: 'POST' });
+            const data = await response.json();
             
-            // Clear charts
-            powerChart.data.labels = [];
-            powerChart.data.datasets.forEach(dataset => dataset.data = []);
-            powerChart.update();
-            
-            safetyChart.data.labels = [];
-            safetyChart.data.datasets.forEach(dataset => dataset.data = []);
-            safetyChart.update();
-            
-            document.getElementById('data-points').textContent = '0';
+            if (data.status === 'reset') {
+                isSimulationRunning = false;
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('stop-btn').disabled = true;
+                clearCharts();
+            }
         }
     } catch (error) {
         console.error('Error resetting simulation:', error);

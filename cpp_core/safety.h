@@ -96,6 +96,20 @@ public:
     void reset();
     
     /**
+     * @brief Manually trigger SCRAM
+     * 
+     * Forces the reactor into SCRAM state for emergency shutdown
+     */
+    void triggerScram();
+    
+    /**
+     * @brief Reset SCRAM status
+     * 
+     * Clears SCRAM state and allows reactor to return to normal operation
+     */
+    void resetScram();
+    
+    /**
      * @brief Set trip thresholds
      * 
      * @param overpower_threshold New overpower trip threshold
