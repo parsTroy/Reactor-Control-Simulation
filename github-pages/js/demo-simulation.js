@@ -1,5 +1,5 @@
 // Demo Simulation for GitHub Pages
-// Simulates reactor behavior without backend
+// Simulates reactor behavior without backend - using simple SVG charts
 
 class DemoSimulation {
     constructor() {
@@ -12,7 +12,8 @@ class DemoSimulation {
         this.animationId = null;
         this.timeStep = 0.1; // 100ms steps for demo
         
-        // Chart data
+        // Chart data - limited to prevent memory issues
+        this.maxDataPoints = 50;
         this.chartData = {
             times: [],
             powers: [],
@@ -28,186 +29,185 @@ class DemoSimulation {
     }
     
     initCharts() {
-        // Power Chart
-        const powerCtx = document.getElementById('powerChart').getContext('2d');
-        this.powerChart = new Chart(powerCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Reactor Power',
-                    data: [],
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    tension: 0.1,
-                    fill: true
-                }, {
-                    label: 'Setpoint',
-                    data: [],
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'transparent',
-                    borderDash: [5, 5],
-                    tension: 0
-                }, {
-                    label: 'Overpower Threshold',
-                    data: [],
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'transparent',
-                    borderDash: [2, 2],
-                    tension: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false
-                },
-                layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10,
-                        left: 10,
-                        right: 10
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time (s)'
-                        },
-                        grid: {
-                            display: true
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Power (normalized)'
-                        },
-                        min: 0.0,
-                        max: 2.0,
-                        beginAtZero: true,
-                        suggestedMin: 0.0,
-                        suggestedMax: 2.0,
-                        afterBuildTicks: function(scale) {
-                            scale.ticks = [
-                                { value: 0.0, label: '0.0' },
-                                { value: 0.4, label: '0.4' },
-                                { value: 0.8, label: '0.8' },
-                                { value: 1.2, label: '1.2' },
-                                { value: 1.6, label: '1.6' },
-                                { value: 2.0, label: '2.0' }
-                            ];
-                        },
-                        grid: {
-                            display: true
-                        },
-                        ticks: {
-                            min: 0.0,
-                            max: 2.0,
-                            stepSize: 0.2,
-                            callback: function(value) {
-                                return value.toFixed(1);
-                            }
-                        }
-                    }
-                },
-                animation: {
-                    duration: 0
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                }
-            }
-        });
+        // Initialize SVG charts
+        this.initPowerChart();
+        this.initSafetyChart();
+    }
+    
+    initPowerChart() {
+        const svg = document.getElementById('powerSvg');
+        if (!svg) return;
         
-        // Safety Chart
-        const safetyCtx = document.getElementById('safetyChart').getContext('2d');
-        this.safetyChart = new Chart(safetyCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'SCRAM Status',
-                    data: [],
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.1,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false
-                },
-                layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10,
-                        left: 10,
-                        right: 10
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time (s)'
-                        },
-                        grid: {
-                            display: true
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'SCRAM Active'
-                        },
-                        min: -0.1,
-                        max: 1.1,
-                        beginAtZero: false,
-                        suggestedMin: -0.1,
-                        suggestedMax: 1.1,
-                        afterBuildTicks: function(scale) {
-                            scale.ticks = [
-                                { value: -0.1, label: '' },
-                                { value: 0.0, label: 'NO' },
-                                { value: 0.5, label: '' },
-                                { value: 1.0, label: 'YES' },
-                                { value: 1.1, label: '' }
-                            ];
-                        },
-                        grid: {
-                            display: true
-                        },
-                        ticks: {
-                            min: -0.1,
-                            max: 1.1,
-                            stepSize: 0.2,
-                            callback: function(value) {
-                                return value === 1 ? 'YES' : value === 0 ? 'NO' : '';
-                            }
-                        }
-                    }
-                },
-                animation: {
-                    duration: 0
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                }
-            }
-        });
+        // Clear any existing content
+        svg.innerHTML = '';
+        
+        // Add grid lines and labels
+        this.drawPowerChartGrid(svg);
+    }
+    
+    initSafetyChart() {
+        const svg = document.getElementById('safetySvg');
+        if (!svg) return;
+        
+        // Clear any existing content
+        svg.innerHTML = '';
+        
+        // Add grid lines and labels
+        this.drawSafetyChartGrid(svg);
+    }
+    
+    drawPowerChartGrid(svg) {
+        const width = svg.clientWidth || 400;
+        const height = svg.clientHeight || 200;
+        const padding = 40;
+        const chartWidth = width - 2 * padding;
+        const chartHeight = height - 2 * padding;
+        
+        // Background
+        svg.innerHTML = `
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#f9f9f9" stroke="#ddd"/>
+            
+            <!-- Grid lines -->
+            <g stroke="#e0e0e0" stroke-width="1">
+                ${Array.from({length: 6}, (_, i) => {
+                    const y = padding + (i * chartHeight / 5);
+                    return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}"/>`;
+                }).join('')}
+                ${Array.from({length: 11}, (_, i) => {
+                    const x = padding + (i * chartWidth / 10);
+                    return `<line x1="${x}" y1="${padding}" x2="${x}" y2="${height - padding}"/>`;
+                }).join('')}
+            </g>
+            
+            <!-- Y-axis labels -->
+            <g fill="#666" font-family="Arial" font-size="12" text-anchor="end">
+                ${Array.from({length: 6}, (_, i) => {
+                    const y = padding + (i * chartHeight / 5);
+                    const value = (2.0 - i * 0.4).toFixed(1);
+                    return `<text x="${padding - 5}" y="${y + 4}">${value}</text>`;
+                }).join('')}
+            </g>
+            
+            <!-- X-axis label -->
+            <text x="${width/2}" y="${height - 5}" fill="#666" font-family="Arial" font-size="12" text-anchor="middle">Time (s)</text>
+            
+            <!-- Y-axis label -->
+            <text x="15" y="${height/2}" fill="#666" font-family="Arial" font-size="12" text-anchor="middle" transform="rotate(-90, 15, ${height/2})">Power</text>
+            
+            <!-- Reference lines -->
+            <line x1="${padding}" y1="${padding + chartHeight * 0.4}" x2="${width - padding}" y2="${padding + chartHeight * 0.4}" stroke="#22c55e" stroke-width="2" stroke-dasharray="5,5" opacity="0.7"/>
+            <line x1="${padding}" y1="${padding + chartHeight * 0.2}" x2="${width - padding}" y2="${padding + chartHeight * 0.2}" stroke="#ef4444" stroke-width="2" stroke-dasharray="2,2" opacity="0.7"/>
+            
+            <!-- Legend -->
+            <g font-family="Arial" font-size="10">
+                <line x1="${width - 120}" y1="${padding + 10}" x2="${width - 100}" y2="${padding + 10}" stroke="#3b82f6" stroke-width="2"/>
+                <text x="${width - 95}" y="${padding + 14}" fill="#333">Power</text>
+                <line x1="${width - 120}" y1="${padding + 25}" x2="${width - 100}" y2="${padding + 25}" stroke="#22c55e" stroke-width="2" stroke-dasharray="5,5"/>
+                <text x="${width - 95}" y="${padding + 29}" fill="#333">Setpoint</text>
+                <line x1="${width - 120}" y1="${padding + 40}" x2="${width - 100}" y2="${padding + 40}" stroke="#ef4444" stroke-width="2" stroke-dasharray="2,2"/>
+                <text x="${width - 95}" y="${padding + 44}" fill="#333">Threshold</text>
+            </g>
+        `;
+    }
+    
+    drawSafetyChartGrid(svg) {
+        const width = svg.clientWidth || 400;
+        const height = svg.clientHeight || 150;
+        const padding = 40;
+        const chartWidth = width - 2 * padding;
+        const chartHeight = height - 2 * padding;
+        
+        // Background
+        svg.innerHTML = `
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#f9f9f9" stroke="#ddd"/>
+            
+            <!-- Grid lines -->
+            <g stroke="#e0e0e0" stroke-width="1">
+                ${Array.from({length: 6}, (_, i) => {
+                    const y = padding + (i * chartHeight / 5);
+                    return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}"/>`;
+                }).join('')}
+                ${Array.from({length: 11}, (_, i) => {
+                    const x = padding + (i * chartWidth / 10);
+                    return `<line x1="${x}" y1="${padding}" x2="${x}" y2="${height - padding}"/>`;
+                }).join('')}
+            </g>
+            
+            <!-- Y-axis labels -->
+            <g fill="#666" font-family="Arial" font-size="12" text-anchor="end">
+                <text x="${padding - 5}" y="${height - padding + 4}">NO</text>
+                <text x="${padding - 5}" y="${padding + 4}">YES</text>
+            </g>
+            
+            <!-- X-axis label -->
+            <text x="${width/2}" y="${height - 5}" fill="#666" font-family="Arial" font-size="12" text-anchor="middle">Time (s)</text>
+            
+            <!-- Y-axis label -->
+            <text x="15" y="${height/2}" fill="#666" font-family="Arial" font-size="12" text-anchor="middle" transform="rotate(-90, 15, ${height/2})">SCRAM</text>
+        `;
+    }
+    
+    updatePowerChart() {
+        const svg = document.getElementById('powerSvg');
+        if (!svg || this.chartData.times.length === 0) return;
+        
+        const width = svg.clientWidth || 400;
+        const height = svg.clientHeight || 200;
+        const padding = 40;
+        const chartWidth = width - 2 * padding;
+        const chartHeight = height - 2 * padding;
+        
+        // Convert data to SVG coordinates
+        const points = this.chartData.powers.map((power, i) => {
+            const x = padding + (i / (this.chartData.powers.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (power / 2.0) * chartHeight;
+            return `${x},${y}`;
+        }).join(' ');
+        
+        const setpointPoints = this.chartData.setpoints.map((setpoint, i) => {
+            const x = padding + (i / (this.chartData.setpoints.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (setpoint / 2.0) * chartHeight;
+            return `${x},${y}`;
+        }).join(' ');
+        
+        // Update the chart with new data
+        this.drawPowerChartGrid(svg);
+        
+        // Add data lines
+        if (points) {
+            svg.innerHTML += `
+                <polyline points="${points}" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                <polyline points="${setpointPoints}" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="5,5"/>
+            `;
+        }
+    }
+    
+    updateSafetyChart() {
+        const svg = document.getElementById('safetySvg');
+        if (!svg || this.chartData.times.length === 0) return;
+        
+        const width = svg.clientWidth || 400;
+        const height = svg.clientHeight || 150;
+        const padding = 40;
+        const chartWidth = width - 2 * padding;
+        const chartHeight = height - 2 * padding;
+        
+        // Convert SCRAM data to SVG coordinates
+        const points = this.chartData.scramStatus.map((scram, i) => {
+            const x = padding + (i / (this.chartData.scramStatus.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (scram * chartHeight);
+            return `${x},${y}`;
+        }).join(' ');
+        
+        // Update the chart with new data
+        this.drawSafetyChartGrid(svg);
+        
+        // Add data line
+        if (points) {
+            svg.innerHTML += `
+                <polyline points="${points}" fill="none" stroke="#ef4444" stroke-width="3"/>
+            `;
+        }
     }
     
     start() {
@@ -298,7 +298,7 @@ class DemoSimulation {
         
         // Add some realistic noise
         this.currentPower += (Math.random() - 0.5) * 0.01;
-        // Strictly clamp power values to prevent chart scaling issues
+        // Strictly clamp power values
         this.currentPower = Math.max(0.0, Math.min(2.0, this.currentPower));
         
         // Store data
@@ -307,12 +307,12 @@ class DemoSimulation {
         this.chartData.scramStatus.push(this.scramStatus ? 1.0 : 0.0);
         this.chartData.setpoints.push(this.powerSetpoint);
         
-        // Keep only last 100 points
-        if (this.chartData.times.length > 100) {
-            this.chartData.times = this.chartData.times.slice(-100);
-            this.chartData.powers = this.chartData.powers.slice(-100);
-            this.chartData.scramStatus = this.chartData.scramStatus.slice(-100);
-            this.chartData.setpoints = this.chartData.setpoints.slice(-100);
+        // Keep only last N points to prevent memory issues
+        if (this.chartData.times.length > this.maxDataPoints) {
+            this.chartData.times = this.chartData.times.slice(-this.maxDataPoints);
+            this.chartData.powers = this.chartData.powers.slice(-this.maxDataPoints);
+            this.chartData.scramStatus = this.chartData.scramStatus.slice(-this.maxDataPoints);
+            this.chartData.setpoints = this.chartData.setpoints.slice(-this.maxDataPoints);
         }
     }
     
@@ -364,51 +364,8 @@ class DemoSimulation {
     }
     
     updateCharts() {
-        if (this.chartData.times.length === 0) return;
-        
-        // Clamp all data to prevent chart scaling issues
-        const clampedPowers = this.chartData.powers.map(p => Math.max(0.0, Math.min(2.0, p)));
-        const clampedSetpoints = this.chartData.setpoints.map(s => Math.max(0.0, Math.min(2.0, s)));
-        const clampedScram = this.chartData.scramStatus.map(s => Math.max(0.0, Math.min(1.0, s)));
-        
-        // Update power chart
-        this.powerChart.data.labels = this.chartData.times.map(t => t.toFixed(3));
-        this.powerChart.data.datasets[0].data = clampedPowers;
-        this.powerChart.data.datasets[1].data = clampedSetpoints;
-        this.powerChart.data.datasets[2].data = new Array(this.chartData.times.length).fill(1.2);
-        
-        // Force chart to maintain fixed scale - completely disable auto-scaling
-        this.powerChart.options.scales.y.min = 0.0;
-        this.powerChart.options.scales.y.max = 2.0;
-        this.powerChart.options.scales.y.afterBuildTicks = function(scale) {
-            scale.ticks = [
-                { value: 0.0, label: '0.0' },
-                { value: 0.4, label: '0.4' },
-                { value: 0.8, label: '0.8' },
-                { value: 1.2, label: '1.2' },
-                { value: 1.6, label: '1.6' },
-                { value: 2.0, label: '2.0' }
-            ];
-        };
-        this.powerChart.update('none');
-        
-        // Update safety chart
-        this.safetyChart.data.labels = this.chartData.times.map(t => t.toFixed(3));
-        this.safetyChart.data.datasets[0].data = clampedScram;
-        
-        // Force chart to maintain fixed scale - completely disable auto-scaling
-        this.safetyChart.options.scales.y.min = -0.1;
-        this.safetyChart.options.scales.y.max = 1.1;
-        this.safetyChart.options.scales.y.afterBuildTicks = function(scale) {
-            scale.ticks = [
-                { value: -0.1, label: '' },
-                { value: 0.0, label: 'NO' },
-                { value: 0.5, label: '' },
-                { value: 1.0, label: 'YES' },
-                { value: 1.1, label: '' }
-            ];
-        };
-        this.safetyChart.update('none');
+        this.updatePowerChart();
+        this.updateSafetyChart();
     }
     
     updateReactor3D(power, scramStatus) {
@@ -442,7 +399,7 @@ let demoSim = null;
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     demoSim = new DemoSimulation();
-    console.log('Demo simulation initialized');
+    console.log('Demo simulation initialized with SVG charts');
 });
 
 // Control functions
