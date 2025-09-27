@@ -75,6 +75,11 @@ logs/
 *.txt
 !README.txt
 !requirements.txt
+!README.md
+!PROJECT_SUMMARY.md
+!docs/RTM.csv
+!screenshots/*.png
+!docs/*.png
 
 # Test outputs
 test_results/
