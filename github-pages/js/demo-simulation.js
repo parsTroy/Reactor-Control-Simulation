@@ -60,11 +60,17 @@ class DemoSimulation {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false
+                },
                 scales: {
                     x: {
                         title: {
                             display: true,
                             text: 'Time (s)'
+                        },
+                        grid: {
+                            display: true
                         }
                     },
                     y: {
@@ -74,14 +80,24 @@ class DemoSimulation {
                         },
                         min: 0.0,
                         max: 2.0,
+                        grid: {
+                            display: true
+                        },
                         ticks: {
                             min: 0.0,
-                            max: 2.0
+                            max: 2.0,
+                            stepSize: 0.2
                         }
                     }
                 },
                 animation: {
                     duration: 0
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
                 }
             }
         });
@@ -104,11 +120,17 @@ class DemoSimulation {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false
+                },
                 scales: {
                     x: {
                         title: {
                             display: true,
                             text: 'Time (s)'
+                        },
+                        grid: {
+                            display: true
                         }
                     },
                     y: {
@@ -118,14 +140,27 @@ class DemoSimulation {
                         },
                         min: -0.1,
                         max: 1.1,
+                        grid: {
+                            display: true
+                        },
                         ticks: {
                             min: -0.1,
-                            max: 1.1
+                            max: 1.1,
+                            stepSize: 0.2,
+                            callback: function(value) {
+                                return value === 1 ? 'YES' : value === 0 ? 'NO' : '';
+                            }
                         }
                     }
                 },
                 animation: {
                     duration: 0
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
                 }
             }
         });

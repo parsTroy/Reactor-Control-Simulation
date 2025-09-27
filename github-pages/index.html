@@ -26,6 +26,11 @@
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chart-container canvas {
+            max-width: 100%;
+            height: auto;
         }
         .control-panel {
             background: #f8f9fa;
@@ -177,13 +182,17 @@
                 <!-- Real-time Power Chart -->
                 <div class="chart-container">
                     <h5>Real-time Power Monitoring</h5>
-                    <canvas id="powerChart" width="400" height="200"></canvas>
+                    <div style="position: relative; height: 200px; width: 100%;">
+                        <canvas id="powerChart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Safety System Status Chart -->
                 <div class="chart-container">
                     <h5>Safety System Status</h5>
-                    <canvas id="safetyChart" width="400" height="150"></canvas>
+                    <div style="position: relative; height: 150px; width: 100%;">
+                        <canvas id="safetyChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
