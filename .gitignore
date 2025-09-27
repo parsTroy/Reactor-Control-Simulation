@@ -1,0 +1,93 @@
+# Reactor Control Simulation - .gitignore
+
+# Build directories
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Compiled binaries
+*.exe
+*.out
+*.app
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Generated plots and data
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.svg
+*.csv
+*.dat
+*.txt
+!README.txt
+!requirements.txt
+
+# Test outputs
+test_results/
+coverage/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Package files
+*.egg-info/
+dist/
+*.egg
+
+# CMake
+CMakeUserPresets.json
