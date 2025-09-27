@@ -122,5 +122,7 @@ PYBIND11_MODULE(reactor_sim, m) {
              "Enable/disable PID control",
              py::arg("enabled"))
         .def_property_readonly("is_scrammed", &ReactorSimulation::isScrammed)
+        .def("trigger_scram", &ReactorSimulation::triggerScram)
+        .def("reset_scram", &ReactorSimulation::resetScram)
         .def_property_readonly("reactor_params", &ReactorSimulation::getReactorParams);
 }

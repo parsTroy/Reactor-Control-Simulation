@@ -103,3 +103,23 @@ std::pair<bool, double> SafetySystem::getScramInfo() const {
     double scram_duration = is_scrammed_ ? (scram_start_time_ + scram_duration_) : 0.0;
     return std::make_pair(is_scrammed_, scram_duration);
 }
+
+/**
+ * @brief Manually trigger SCRAM
+ */
+void SafetySystem::triggerScram() {
+    is_scrammed_ = true;
+    scram_start_time_ = 0.0;  // Will be set properly when simulation steps
+    overpower_trip_ = true;   // Mark as overpower trip
+}
+
+/**
+ * @brief Reset SCRAM status
+ */
+void SafetySystem::resetScram() {
+    is_scrammed_ = false;
+    scram_start_time_ = 0.0;
+    overpower_trip_ = false;
+    coolant_trip_ = false;
+    coolant_loss_detected_ = false;
+}
