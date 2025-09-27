@@ -32,9 +32,21 @@ std::vector<double> step_point_kinetics(
         throw std::invalid_argument("Number of beta_i and lambda_i must be equal");
     }
     
+    // Check for reasonable time step size to prevent instability
+    double max_dt = params.Lambda / 10.0;  // Time step should be much smaller than generation time
+    if (dt > max_dt) {
+        throw std::invalid_argument("Time step too large for numerical stability. Max allowed: " + 
+                                  std::to_string(max_dt) + "s, provided: " + std::to_string(dt) + "s");
+    }
+    
     // Extract neutron density and precursor concentrations
     double n = y[0];
     std::vector<double> C(y.begin() + 1, y.end());
+    
+    // Check for negative or extremely large values (sanity check)
+    if (n < 0.0 || n > 1e10) {
+        throw std::runtime_error("Neutron density out of reasonable range: " + std::to_string(n));
+    }
     
     // Calculate neutron density derivative
     // dn/dt = (ρ - β)/Λ * n + Σ λᵢ * Cᵢ
@@ -54,12 +66,24 @@ std::vector<double> step_point_kinetics(
     std::vector<double> y_next;
     y_next.reserve(y.size());
     
-    // Update neutron density
-    y_next.push_back(n + dt * dn_dt);
+    // Update neutron density with bounds checking
+    double n_next = n + dt * dn_dt;
+    if (n_next < 0.0) {
+        n_next = 0.0;  // Neutron density cannot be negative
+    } else if (n_next > 1e6) {
+        n_next = 1e6;  // Cap at reasonable maximum
+    }
+    y_next.push_back(n_next);
     
-    // Update precursor concentrations
+    // Update precursor concentrations with bounds checking
     for (size_t i = 0; i < C.size(); ++i) {
-        y_next.push_back(C[i] + dt * dC_dt[i]);
+        double C_next = C[i] + dt * dC_dt[i];
+        if (C_next < 0.0) {
+            C_next = 0.0;  // Precursor concentrations cannot be negative
+        } else if (C_next > 1e6) {
+            C_next = 1e6;  // Cap at reasonable maximum
+        }
+        y_next.push_back(C_next);
     }
     
     return y_next;

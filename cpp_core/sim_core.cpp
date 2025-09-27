@@ -28,7 +28,7 @@ public:
     /**
      * @brief Constructor
      */
-    ReactorSimulation(double time_step = 0.001)
+    ReactorSimulation(double time_step = 1e-6)  // Much smaller default time step for stability
         : params_(),
           pid_controller_(0.1, 0.01, 0.05, 1.0, time_step),
           safety_system_(),

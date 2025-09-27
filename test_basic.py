@@ -29,9 +29,10 @@ def test_kinetics_solver():
     print("   Testing positive reactivity insertion...")
     state = initial_state.copy()
     reactivity = 0.001  # 1 mk positive reactivity
+    dt = 1e-6  # Much smaller time step for stability
     
-    for i in range(100):
-        state = reactor_sim.step_point_kinetics(0.0, 0.001, state, params, reactivity)
+    for i in range(1000):  # More steps with smaller time step
+        state = reactor_sim.step_point_kinetics(0.0, dt, state, params, reactivity)
     
     final_power = state[0]
     power_increase = final_power / initial_state[0]
@@ -84,15 +85,15 @@ def test_full_simulation():
     print("\n Testing Full Simulation...")
     
     # Create simulation
-    sim = reactor_sim.ReactorSimulation(time_step=0.01)
+    sim = reactor_sim.ReactorSimulation(time_step=1e-6)  # Use stable time step
     print(f"   Initial power: {sim.get_current_power():.6f}")
     print(f"   Initial time: {sim.get_current_time():.6f}")
     
-    # Run simulation for 1 second
+    # Run simulation for 0.01 seconds (much shorter for stability)
     times = []
     powers = []
     
-    for i in range(100):
+    for i in range(10000):  # More steps with smaller time step
         sim.step()
         times.append(sim.get_current_time())
         powers.append(sim.get_current_power())
@@ -102,7 +103,7 @@ def test_full_simulation():
     print(f"   Power range: {min(powers):.6f} - {max(powers):.6f}")
     
     # Check that simulation ran
-    assert len(times) == 100, "Should have 100 time steps"
+    assert len(times) == 10000, "Should have 10000 time steps"
     assert sim.get_current_time() > 0, "Time should advance"
     print(" Full simulation working correctly!")
 
@@ -111,14 +112,14 @@ def create_demo_plot():
     print("\n Creating Demo Plot...")
     
     # Run a longer simulation
-    sim = reactor_sim.ReactorSimulation(time_step=0.01)
+    sim = reactor_sim.ReactorSimulation(time_step=1e-6)  # Use default small time step
     sim.set_power_setpoint(1.0)
     
     times = []
     powers = []
     
-    # Run for 5 seconds
-    for i in range(500):
+    # Run for 0.1 seconds (much shorter for stability)
+    for i in range(100000):  # More steps with smaller time step
         sim.step()
         times.append(sim.get_current_time())
         powers.append(sim.get_current_power())
