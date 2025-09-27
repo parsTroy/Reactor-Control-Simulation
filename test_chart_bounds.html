@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chart Bounds Test - Fixed Y-Axis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { width: 800px; height: 400px; margin: 20px 0; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Chart Bounds Test - Fixed Y-Axis (0.0 to 2.0)</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Normal Data (Should stay within bounds)</h3>
+        <div class="chart-container">
+            <canvas id="normalChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Extreme Data (Should be clamped to bounds)</h3>
+        <div class="chart-container">
+            <canvas id="extremeChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Real-time Updates (Should maintain fixed bounds)</h3>
+        <div class="chart-container">
+            <canvas id="realtimeChart"></canvas>
+        </div>
+        <button onclick="addRandomData()">Add Random Data Point</button>
+        <button onclick="addExtremeData()">Add Extreme Data Point</button>
+        <button onclick="clearData()">Clear Data</button>
+    </div>
+    
+    <script>
+        // Test 1: Normal data
+        const normalCtx = document.getElementById('normalChart').getContext('2d');
+        const normalChart = new Chart(normalCtx, {
+            type: 'line',
+            data: {
+                labels: ['0', '1', '2', '3', '4', '5'],
+                datasets: [{
+                    label: 'Normal Power Data',
+                    data: [1.0, 1.1, 0.9, 1.05, 0.95, 1.0],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0.0,
+                        max: 2.0,
+                        beginAtZero: true,
+                        ticks: { min: 0.0, max: 2.0 }
+                    }
+                }
+            }
+        });
+        
+        // Test 2: Extreme data (should be clamped)
+        const extremeCtx = document.getElementById('extremeChart').getContext('2d');
+        const extremeChart = new Chart(extremeCtx, {
+            type: 'line',
+            data: {
+                labels: ['0', '1', '2', '3', '4', '5'],
+                datasets: [{
+                    label: 'Extreme Data (Clamped)',
+                    data: [1.0, 15.0, -5.0, 100.0, 0.5, 1.0],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0.0,
+                        max: 2.0,
+                        beginAtZero: true,
+                        ticks: { min: 0.0, max: 2.0 }
+                    }
+                }
+            }
+        });
+        
+        // Test 3: Real-time updates
+        const realtimeCtx = document.getElementById('realtimeChart').getContext('2d');
+        const realtimeChart = new Chart(realtimeCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Real-time Power',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0.0,
+                        max: 2.0,
+                        beginAtZero: true,
+                        ticks: { min: 0.0, max: 2.0 }
+                    }
+                }
+            }
+        });
+        
+        let timeCounter = 0;
+        
+        function addRandomData() {
+            const power = Math.random() * 2.0; // 0 to 2.0
+            addDataPoint(power);
+        }
+        
+        function addExtremeData() {
+            const power = (Math.random() - 0.5) * 20; // -10 to 10
+            addDataPoint(power);
+        }
+        
+        function addDataPoint(power) {
+            // Clamp power to bounds
+            const clampedPower = Math.max(0, Math.min(power, 2.0));
+            
+            realtimeChart.data.labels.push(timeCounter.toString());
+            realtimeChart.data.datasets[0].data.push(clampedPower);
+            
+            // Keep only last 20 points
+            if (realtimeChart.data.labels.length > 20) {
+                realtimeChart.data.labels.shift();
+                realtimeChart.data.datasets[0].data.shift();
+            }
+            
+            realtimeChart.update('none');
+            timeCounter++;
+            
+            console.log(`Added power: ${power.toFixed(2)} -> clamped to: ${clampedPower.toFixed(2)}`);
+        }
+        
+        function clearData() {
+            realtimeChart.data.labels = [];
+            realtimeChart.data.datasets[0].data = [];
+            realtimeChart.update();
+            timeCounter = 0;
+        }
+        
+        // Auto-add some initial data
+        setTimeout(() => {
+            for (let i = 0; i < 10; i++) {
+                addRandomData();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

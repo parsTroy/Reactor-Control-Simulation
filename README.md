@@ -12,6 +12,7 @@ This project simulates nuclear reactor point kinetics with delayed neutron group
 - **PID controller** with anti-windup and rate limits
 - **Safety interlocks** for overpower and coolant loss SCRAM
 - **Real-time Python dashboard** for visualization and analysis
+- **Interactive Web UI** with modern, responsive interface
 - **Comprehensive logging** with timestamps and event tracking
 - **JSON configuration** for easy parameter adjustment
 - **Professional visualization** with safety annotations
@@ -63,13 +64,44 @@ Where:
 │ • Integration   │    │ • Data Logging  │    │ • SCRAM Logic   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │  Pybind11       │
-                    │  Bindings       │
-                    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Web Interface  │    │  REST API       │    │  Real-time Data │
+│                 │    │                 │    │                 │
+│ • Modern UI     │◄──►│ • Flask Server  │◄──►│ • Live Updates  │
+│ • Interactive   │    │ • JSON Config   │    │ • Chart.js      │
+│ • Responsive    │    │ • Data Export   │    │ • WebSocket     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
+
+## Web UI Features
+
+The project includes a modern, interactive web interface that provides:
+
+### Real-time Monitoring
+- **Live Power Display**: Real-time reactor power levels with visual indicators
+- **Safety Status**: SCRAM status monitoring with animated alerts
+- **Interactive Charts**: Real-time plotting with Chart.js for smooth visualization
+- **System Metrics**: Time tracking, data points, and performance monitoring
+
+### Interactive Controls
+- **Simulation Management**: Start, stop, and reset simulation with one click
+- **Power Setpoint**: Adjustable power setpoint with responsive slider control
+- **PID Configuration**: Real-time PID gain adjustment (Kp, Ki, Kd) with immediate feedback
+- **Scenario Testing**: Pre-built test scenarios for different operational conditions
+
+### Professional Interface
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Modern UI**: Clean, professional interface built with Bootstrap 5
+- **Real-time Updates**: 10Hz update rate for smooth, responsive visualization
+- **Fullscreen Support**: Toggle fullscreen mode for presentations and demos
+
+### Data Management
+- **CSV Export**: Download simulation data for external analysis
+- **Plot Generation**: Create high-quality plots for reports and presentations
+- **Configuration Management**: Save and load simulation parameters
+- **Performance Monitoring**: Track simulation performance and system resources
 
 ## Quick Start
 
@@ -108,6 +140,12 @@ make -j4  # On Windows: cmake --build . --config Release
 
 ### Running the Simulation
 
+**Web UI (Recommended):**
+```bash
+python start_web_ui.py
+# Open browser to: http://localhost:5000
+```
+
 **Basic Dashboard:**
 ```bash
 python python_ui/dashboard.py
@@ -121,6 +159,11 @@ python python_ui/enhanced_dashboard.py
 **Quick Test:**
 ```bash
 python test_dashboard_simple.py
+```
+
+**Web UI Test:**
+```bash
+python test_web_ui.py
 ```
 
 ## Screenshots
