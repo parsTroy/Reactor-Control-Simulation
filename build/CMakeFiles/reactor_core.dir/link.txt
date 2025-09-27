@@ -1,0 +1,2 @@
+/usr/bin/ar qc libreactor_core.a CMakeFiles/reactor_core.dir/cpp_core/kinetics_solver.cpp.o CMakeFiles/reactor_core.dir/cpp_core/pid_controller.cpp.o CMakeFiles/reactor_core.dir/cpp_core/safety.cpp.o CMakeFiles/reactor_core.dir/cpp_core/sim_core.cpp.o
+/usr/bin/ranlib libreactor_core.a

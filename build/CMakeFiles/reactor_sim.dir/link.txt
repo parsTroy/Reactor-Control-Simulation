@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wall -Wextra -Wpedantic -Werror -O3 -DNDEBUG -O3 -DNDEBUG -arch arm64 -Xlinker -undefined -Xlinker dynamic_lookup -flto -bundle -Wl,-headerpad_max_install_names -o reactor_sim.cpython-313-darwin.so CMakeFiles/reactor_sim.dir/python_bindings/bindings.cpp.o  libreactor_core.a
